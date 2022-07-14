@@ -1,18 +1,26 @@
 package constants
 
 const (
-	AGENT_DIRECTORY = "agent/"
-	BIN_PATH        = "bin/"
-	CONF_PATH       = "conf/"
-	INSTALL_PATH    = "/usr/local/logicmonitor/"
+	// AgentDirectory Agent Directory
+	AgentDirectory = "agent/"
+	// BinPath bin directory
+	BinPath     = "bin/"
+	ConfPath    = "conf/"
+	InstallPath = "/usr/local/logicmonitor/"
 
-	DEFAULT_OS        = "Linux"
-	TEMP_PATH         = "/tmp/"
-	INSTALL_STAT_PATH = INSTALL_PATH + AGENT_DIRECTORY + "/tmp/install.tmp"
+	DefaultOs       = "Linux"
+	TempPath        = "/tmp/"
+	InstallStatPath = InstallPath + AgentDirectory + "/tmp/install.tmp"
 
-	LOCK_PATH               = INSTALL_PATH + AGENT_DIRECTORY + BIN_PATH
-	LOG_FILE                = INSTALL_PATH + "/logs/wrapper.log"
-	COLLECTOR_FOUND         = INSTALL_PATH + "collector.found"
-	FIRST_RUN               = INSTALL_PATH + "first.run"
-	MIN_NONROOT_INSTALL_VER = 28300
+	LockPath       = InstallPath + AgentDirectory + BinPath
+	LogFile        = InstallPath + "/logs/wrapper.log"
+	CollectorFound = InstallPath + "collector.found"
+	FirstRun       = InstallPath + "first.run"
+)
+
+const (
+	// MinNonRootInstallVer
+	// TODO: this var and the logic that depends on it can be removed after non-root
+	// installer makes it to MGD
+	MinNonRootInstallVer = 28300
 )

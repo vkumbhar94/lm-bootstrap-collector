@@ -3,6 +3,10 @@ package logicmonitor
 import (
 	"bytes"
 	"errors"
+	"io"
+	"net/http"
+	"net/url"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -10,20 +14,17 @@ import (
 	"github.com/logicmonitor/lm-sdk-go/client/lm"
 	"github.com/sirupsen/logrus"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/config"
-	"io"
-	"net/http"
-	"net/url"
 )
 
-func NewLMClient(argusConfig *config.Config) (*client.LMSdkGo, error) {
+func NewLMClient(c *config.Creds) (*client.LMSdkGo, error) {
 	conf := client.NewConfig()
-	conf.SetAccessID(&argusConfig.AccessID)
-	conf.SetAccessKey(&argusConfig.AccessKey)
-	domain := argusConfig.Account + ".logicmonitor.com"
+	conf.SetAccessID(&c.AccessID)
+	conf.SetAccessKey(&c.AccessKey)
+	domain := c.Account + ".logicmonitor.com"
 	conf.SetAccountDomain(&domain)
 	// conf.UserAgent = constants.UserAgentBase + constants.Version
-	if argusConfig.ProxyUrl == "" {
-		if argusConfig.IgnoreSSL {
+	if c.ProxyUrl == "" {
+		if c.IgnoreSSL {
 			return newLMClientWithoutSSL(conf)
 		}
 
@@ -31,7 +32,7 @@ func NewLMClient(argusConfig *config.Config) (*client.LMSdkGo, error) {
 		return c, nil
 	}
 
-	return newLMClientWithProxy(conf, argusConfig)
+	return newLMClientWithProxy(conf, c)
 }
 
 func NewClient(c *client.Config) *client.LMSdkGo {
@@ -47,6 +48,10 @@ func NewClient(c *client.Config) *client.LMSdkGo {
 	return cli
 }
 
+// LMBinaryFileConsumer Requires to download collector binary installer,
+// Logicmonitor sends content-type as application/binary whereas go-openapi (swagger) doesn't understand
+// whereas swagger expects application/octet-stream content type on binary files
+// hence we are writing custom consumer to read binary data from response and write it to file
 func LMBinaryFileConsumer() runtime.Consumer {
 	return runtime.ConsumerFunc(func(reader io.Reader, data interface{}) error {
 		if reader == nil {
@@ -75,7 +80,7 @@ func LMBinaryFileConsumer() runtime.Consumer {
 	})
 }
 
-func newLMClientWithProxy(config *client.Config, argusConfig *config.Config) (*client.LMSdkGo, error) {
+func newLMClientWithProxy(config *client.Config, argusConfig *config.Creds) (*client.LMSdkGo, error) {
 	proxyURL, err := url.Parse(argusConfig.ProxyUrl)
 	if err != nil {
 		return nil, err

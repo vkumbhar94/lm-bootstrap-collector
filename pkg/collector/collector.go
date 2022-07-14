@@ -5,6 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/logicmonitor/lm-sdk-go/client"
 	"github.com/logicmonitor/lm-sdk-go/client/lm"
 	"github.com/logicmonitor/lm-sdk-go/models"
@@ -13,14 +19,9 @@ import (
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/config"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/constants"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/util"
-	"math"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
-func Start(logger *logrus.Entry, conf *config.Config, client *client.LMSdkGo) error {
+func Start(logger logrus.FieldLogger, creds *config.Creds, conf *config.Config, client *client.LMSdkGo) error {
 	collector, err := FindCollector(conf, client)
 	if err != nil {
 		logger.Warn("collector not found")
@@ -34,20 +35,27 @@ func Start(logger *logrus.Entry, conf *config.Config, client *client.LMSdkGo) er
 		}
 	} else {
 		logger.Info("Collector Found")
-		if _, err := os.Stat(constants.FIRST_RUN); errors.Is(err, os.ErrNotExist) {
-			_ = util.Touch(constants.COLLECTOR_FOUND)
+		// we want to make a note on the fs that we found an existing collector
+		// so that we don't remove it during a future cleanup, but we should
+		// only make this note if this is the first time the container is run
+		// (otherwise, every subsequent should detect the existing collector
+		// that we're going to create below. Not the behavior we want)
+		if _, err := os.Stat(constants.FirstRun); errors.Is(err, os.ErrNotExist) {
+			_ = util.Touch(constants.CollectorFound)
 		}
 	}
-	_ = util.Touch(constants.FIRST_RUN)
-	if _, err := os.Stat(constants.INSTALL_PATH + constants.AGENT_DIRECTORY); !errors.Is(err, os.ErrNotExist) {
+
+	// let subsequent runs know that this isn't the first container run
+	_ = util.Touch(constants.FirstRun)
+	if _, err := os.Stat(constants.InstallPath + constants.AgentDirectory); !errors.Is(err, os.ErrNotExist) {
 		logger.Info(`Collector already installed.`)
-		Cleanup(conf, client)
+		_ = util.Cleanup(logger)
 		return nil
 	}
-	return Install(logger, conf, client, collector)
+	return Install(logger, creds, conf, client, collector)
 }
 
-func Install(logger *logrus.Entry, conf *config.Config, sdkGo *client.LMSdkGo, collector *models.Collector) error {
+func Install(logger logrus.FieldLogger, creds *config.Creds, conf *config.Config, sdkGo *client.LMSdkGo, collector *models.Collector) error {
 	currentVersion := collector.Build
 	filename, err := DownloadInstaller(logger, conf, sdkGo, collector)
 	if filename == "" && errors.Is(err, cerrors.VersionError) {
@@ -60,8 +68,8 @@ func Install(logger *logrus.Entry, conf *config.Config, sdkGo *client.LMSdkGo, c
 	}
 	logger.Infof("Installing collector: %s", filename)
 	installArgs := []string{"-y"}
-	// # force update the collector object to ensure all details are up to date
-	//    # e.g. build version
+	//  force update the collector object to ensure all details are up-to-date
+	//  e.g. build version
 	if collector.Build != "0" {
 		params := lm.NewGetCollectorByIDParams()
 		params.ID = collector.ID
@@ -71,15 +79,15 @@ func Install(logger *logrus.Entry, conf *config.Config, sdkGo *client.LMSdkGo, c
 			currentVersion = c.Payload.Build
 		}
 	}
-	if conf.Version >= constants.MIN_NONROOT_INSTALL_VER || conf.UseEa || conf.Version == 0 {
+	if conf.Version >= constants.MinNonRootInstallVer || conf.UseEa || conf.Version == 0 {
 		installArgs = append(installArgs, "-u", "root")
 	}
-	if conf.ProxyUrl != "" {
-		installArgs = append(installArgs, "-p", conf.Proxy.Host)
-		if conf.ProxyUser != "" {
-			installArgs = append(installArgs, "-U", conf.ProxyUser)
-			if conf.ProxyPass != "" {
-				installArgs = append(installArgs, "-P", conf.ProxyPass)
+	if creds.ProxyUrl != "" {
+		installArgs = append(installArgs, "-p", creds.Proxy.Host)
+		if creds.ProxyUser != "" {
+			installArgs = append(installArgs, "-U", creds.ProxyUser)
+			if creds.ProxyPass != "" {
+				installArgs = append(installArgs, "-P", creds.ProxyPass)
 			}
 		}
 	}
@@ -95,18 +103,19 @@ func Install(logger *logrus.Entry, conf *config.Config, sdkGo *client.LMSdkGo, c
 			}
 		}
 	}
-	if conf.IgnoreSSL {
+	if creds.IgnoreSSL {
 		_, _, _ = util.Shellout("sed", "-i",
 			"s/EnforceLogicMonitorSSL=true/EnforceLogicMonitorSSL=false/g",
 			"/usr/local/logicmonitor/agent/conf/agent.conf")
 	}
 	logger.Info("Cleaning up downloaded installer")
-	if f, err := os.Open(constants.INSTALL_STAT_PATH); err == nil {
+	// log message if version is outdated
+	if f, err := os.Open(constants.InstallStatPath); err == nil {
 		defer func(f *os.File) {
 			_ = f.Close()
 		}(f)
 		scanner := bufio.NewScanner(f)
-		// optionally, resize scanner's capacity for lines over 64K, see next example
+
 		for scanner.Scan() {
 			line := scanner.Text()
 			if strings.Contains(line, "complexInfo=") {
@@ -130,19 +139,24 @@ func Install(logger *logrus.Entry, conf *config.Config, sdkGo *client.LMSdkGo, c
 	return nil
 }
 
-func DownloadInstaller(logger *logrus.Entry, conf *config.Config, sdkGo *client.LMSdkGo, collector *models.Collector) (string, error) {
-	logger.Infof("Downloading collector %s", collector.ID)
+func DownloadInstaller(logger logrus.FieldLogger, conf *config.Config, sdkGo *client.LMSdkGo, collector *models.Collector) (string, error) {
+	logger.Infof("Downloading collector %d", collector.ID)
 
 	params := lm.NewGetCollectorInstallerParamsWithTimeout(10 * time.Minute)
-	params.SetCollectorID(collector.ID)
-	osAndArch := constants.DEFAULT_OS + "64"
-	if strconv.IntSize == 32 {
-		osAndArch = constants.DEFAULT_OS + "32"
-	}
-	params.SetOsAndArch(osAndArch)
-	csize := conf.CollectorSize.String()
+
+	csize := conf.Size.String()
 	logger.Infof("size: %s", csize)
 	params.SetCollectorSize(&csize)
+
+	params.SetCollectorID(collector.ID)
+	params.SetUseEA(&conf.UseEa)
+
+	osAndArch := constants.DefaultOs + "64"
+	if strconv.IntSize == 32 {
+		osAndArch = constants.DefaultOs + "32"
+	}
+	params.SetOsAndArch(osAndArch)
+
 	if conf.Version != 0 {
 		params.SetCollectorVersion(&conf.Version)
 	} else if collector.Build != "0" && !conf.UseEa {
@@ -150,9 +164,9 @@ func DownloadInstaller(logger *logrus.Entry, conf *config.Config, sdkGo *client.
 		v2 := int32(v)
 		params.SetCollectorVersion(&v2)
 	}
-	filename := fmt.Sprintf("%slogicmonitorsetupx64_%d.bin", constants.TEMP_PATH, conf.CollectorID)
+	filename := fmt.Sprintf("%slogicmonitorsetupx64_%d.bin", constants.TempPath, conf.ID)
 
-	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0755)
+	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0o755)
 	if err != nil {
 		return "", err
 	}
@@ -168,6 +182,13 @@ func DownloadInstaller(logger *logrus.Entry, conf *config.Config, sdkGo *client.
 	defer func() {
 		_ = f.Close()
 	}()
+	logger.Infof("Downloaded installer at %s", filename)
+	// detect cases where we download an invalid installer
+	stat, err := os.Stat(filename)
+	if err == nil {
+		logger.Infof("Installer size: %s", ToSI(stat.Size()))
+	}
+
 	return filename, nil
 }
 
@@ -178,6 +199,7 @@ func ToSI(size int64) string {
 	getSuffix := suffixes[int(math.Floor(base))]
 	return strconv.FormatFloat(getSize, 'f', -1, 64) + " " + getSuffix
 }
+
 func Round(val float64, roundOn float64, places int) (newVal float64) {
 	var round float64
 	pow := math.Pow(10, float64(places))
@@ -192,34 +214,35 @@ func Round(val float64, roundOn float64, places int) (newVal float64) {
 	return
 }
 
-func Cleanup(*config.Config, *client.LMSdkGo) {
-
-}
-
-func NewCollector(logger *logrus.Entry, conf *config.Config, sdkGo *client.LMSdkGo) (*models.Collector, error) {
-	collector := &models.Collector{
-		BackupAgentID:      conf.BackupCollectorID,
-		EnableFailBack:     conf.EnableFailBack,
-		EscalatingChainID:  conf.EscalatingChainID,
-		ID:                 conf.CollectorID,
-		ResendIval:         conf.ResendInterval,
-		SuppressAlertClear: conf.SuppressAlertClear,
-	}
-	id, err := FindCollectorGroupID(logger, conf.CollectorGroup, sdkGo)
+func NewCollector(logger logrus.FieldLogger, conf *config.Config, sdkGo *client.LMSdkGo) (*models.Collector, error) {
+	collectorGroupID, err := FindCollectorGroupID(logger, conf.Group, sdkGo)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("collector group [%s] doesn't exist: %w", conf.Group, err)
 	}
-	collector.CollectorGroupID = id
+	collector := &models.Collector{
+		CollectorGroupID:              collectorGroupID,
+		BackupAgentID:                 conf.BackupCollectorID,
+		EnableFailBack:                conf.EnableFailBack,
+		EscalatingChainID:             conf.EscalatingChainID,
+		ID:                            conf.ID,
+		ResendIval:                    conf.ResendInterval,
+		SuppressAlertClear:            conf.SuppressAlertClear,
+		NeedAutoCreateCollectorDevice: false,
+	}
+
 	if conf.Description != "" {
 		collector.Description = conf.Description
 	} else if hostname, err := os.Hostname(); err == nil {
 		collector.Description = hostname
-
 	}
 	params := lm.NewAddCollectorParams()
 	params.SetBody(collector)
 	resp, err := sdkGo.LM.AddCollector(params)
 	if err != nil {
+		if GetHTTPStatusCodeFromLMSDKError(err) == 600 {
+			// Status 600: The record already exists
+			return collector, nil
+		}
 		if es, ok := err.(*lm.AddCollectorDefault); ok && es.Payload.ErrorCode == 600 {
 			// Status 600: The record already exists
 			return collector, nil
@@ -230,7 +253,7 @@ func NewCollector(logger *logrus.Entry, conf *config.Config, sdkGo *client.LMSdk
 	return collector, nil
 }
 
-func FindCollectorGroupID(logger *logrus.Entry, collectorGroup string, sdkGo *client.LMSdkGo) (int32, error) {
+func FindCollectorGroupID(logger logrus.FieldLogger, collectorGroup string, sdkGo *client.LMSdkGo) (int32, error) {
 	logger.Infof("Finding collector group " + collectorGroup)
 	// if the root group is set, no need to search
 	if collectorGroup == "/" {
@@ -254,9 +277,9 @@ func FindCollectorGroupID(logger *logrus.Entry, collectorGroup string, sdkGo *cl
 }
 
 func FindCollector(conf *config.Config, sdkGo *client.LMSdkGo) (*models.Collector, error) {
-	if conf.CollectorID != 0 {
+	if conf.ID != 0 {
 		params := lm.NewGetCollectorByIDParams()
-		params.ID = conf.CollectorID
+		params.ID = conf.ID
 		resp, err := sdkGo.LM.GetCollectorByID(params)
 		if err != nil {
 			return nil, err
@@ -276,7 +299,7 @@ func FindCollector(conf *config.Config, sdkGo *client.LMSdkGo) (*models.Collecto
 					return nil, err
 				}
 				return resp.Payload, nil
-				//return c, nil
+				// return c, nil
 
 			}
 		}

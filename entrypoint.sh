@@ -103,7 +103,7 @@ signal_handler() {
   # only cleanup if we shutdown cleanly
   if [ ! -f $UNCLEAN_SHUTDOWN_PATH ]; then
     /usr/local/logicmonitor/agent/bin/sbshutdown;
-    python /collector/shutdown.py
+    lmbc shutdown
     exit $?
   else
     rm $UNCLEAN_SHUTDOWN_PATH
@@ -114,7 +114,7 @@ signal_handler() {
 set -e
 # run application
 # python /collector/startup.py
-/usr/bin/lmbc
+/usr/bin/lmbc start
 # while true; do sleep 3; done
 
 # ensure the collector is stopped so that we can control startup
