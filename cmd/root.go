@@ -66,8 +66,6 @@ to quickly create a Cobra application.`,
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-	},
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
