@@ -7,7 +7,6 @@ archives:
     files:
       - LICENSE
       - README.md
-      - completion.yaml
 builds:
   - main: ./
     goos:
