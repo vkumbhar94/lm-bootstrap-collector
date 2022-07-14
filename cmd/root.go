@@ -5,15 +5,17 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/client/logicmonitor"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/collector"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/config"
-	"gopkg.in/yaml.v3"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -45,21 +47,24 @@ to quickly create a Cobra application.`,
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-
-		b, err := yaml.Marshal(conf)
+		logrus.SetOutput(cmd.OutOrStdout())
+		logrus.SetReportCaller(true)
+		logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339, FullTimestamp: true})
+		logger := logrus.WithField("command", cmd.Name())
+		b, err := json.Marshal(conf)
 		if err != nil {
-			cmd.Println("Failed to marshal config")
+			logger.Error("Failed to marshal config")
 			return
 		}
-		cmd.Println("Config:\n", string(b))
+		logger.Infof("Config: %s", b)
 
 		client, err := logicmonitor.NewLMClient(conf)
 		if err != nil {
-			cmd.Println("Cannot create logicmonitor client")
+			logger.Error("Cannot create logicmonitor client")
 			return
 		}
-		if err := collector.Start(conf, client); err != nil {
-			cmd.Println("Install failed with: ", err)
+		if err := collector.Start(logger, conf, client); err != nil {
+			logger.Infof("Install failed with: %s", err)
 			return
 		}
 	},

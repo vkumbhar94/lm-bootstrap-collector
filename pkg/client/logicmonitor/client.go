@@ -3,19 +3,16 @@ package logicmonitor
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/go-openapi/runtime"
-	"io"
-	"net/http"
-	"net/url"
-	"time"
-
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 	"github.com/logicmonitor/lm-sdk-go/client"
 	"github.com/logicmonitor/lm-sdk-go/client/lm"
 	"github.com/sirupsen/logrus"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/config"
+	"io"
+	"net/http"
+	"net/url"
 )
 
 func NewLMClient(argusConfig *config.Config) (*client.LMSdkGo, error) {
@@ -55,7 +52,6 @@ func LMBinaryFileConsumer() runtime.Consumer {
 		if reader == nil {
 			return errors.New("LMBinaryFileConsumer requires a reader") // early exit
 		}
-		fmt.Println("Downloading file: ", time.Now())
 		buf := new(bytes.Buffer)
 		_, err := buf.ReadFrom(reader)
 		if err != nil {
@@ -67,7 +63,6 @@ func LMBinaryFileConsumer() runtime.Consumer {
 			return errors.New("provided output object is not of type io.writer")
 			// the assertion failed.
 		}
-		fmt.Println("Writing file: ", time.Now())
 		_, err = w.Write(b)
 		if err != nil {
 			return err
@@ -76,7 +71,6 @@ func LMBinaryFileConsumer() runtime.Consumer {
 		if ok {
 			c.Close()
 		}
-		fmt.Println("Write completed: ", time.Now())
 		return nil
 	})
 }
