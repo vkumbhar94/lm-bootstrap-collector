@@ -1,4 +1,4 @@
-FROM golang:1.14 as build
+FROM golang:1.18 as build
 WORKDIR $GOPATH/src/github.com/vkumbhar94/lm-bootstrap-collector
 ARG VERSION
 COPY ./ ./

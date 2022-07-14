@@ -115,7 +115,7 @@ set -e
 # run application
 # python /collector/startup.py
 /usr/bin/lmbc
-while true; do sleep 3; done
+# while true; do sleep 3; done
 
 # ensure the collector is stopped so that we can control startup
 $AGENT_BIN stop > /dev/null
