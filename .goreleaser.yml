@@ -1,0 +1,21 @@
+archives:
+  - format: tar.gz
+    replacements:
+      amd64: x86_64
+      darwin: Darwin
+      linux: Linux
+    files:
+      - LICENSE
+      - README.md
+      - completion.yaml
+builds:
+  - main: ./
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
