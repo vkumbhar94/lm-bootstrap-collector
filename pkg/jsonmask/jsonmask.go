@@ -3,6 +3,7 @@ package jsonmask
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -201,4 +202,20 @@ func MaskJson(data any, keys ...string) (string, error) {
 		return "", err
 	}
 	return *t, nil
+}
+func MaskYaml(data any, keys ...string) (string, error) {
+	maskJson, err := MaskJson(data, keys...)
+	if err != nil {
+		return "", err
+	}
+	var v any
+	err = json.Unmarshal([]byte(maskJson), &v)
+	if err != nil {
+		return "", err
+	}
+	marshal, err := yaml.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(marshal), nil
 }

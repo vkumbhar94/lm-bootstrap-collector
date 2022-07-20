@@ -160,22 +160,13 @@ func (c *Config) Validate() error {
 
 func (c *Config) setK8sCollectorID() error {
 	var err error
-	hostname, err := os.Hostname()
-	// hostname := "abc-0"
-	if err != nil {
-		return err
-	}
 	var index int
 	if c.Debug {
 		index = c.DebugIndex
 	} else {
-		arr := strings.Split(hostname, "-")
-		if len(arr) == 0 {
-			return fmt.Errorf("hostname cannot parse: %s to get index", hostname)
-		}
-		index, err = strconv.Atoi(arr[len(arr)-1])
+		index, err = GetCollectorIndex()
 		if err != nil {
-			return fmt.Errorf("collecor ID index parse failed with: %w", err)
+			return err
 		}
 	}
 
@@ -189,4 +180,21 @@ func (c *Config) setK8sCollectorID() error {
 	}
 	c.ID = int32(cid)
 	return nil
+}
+
+func GetCollectorIndex() (int, error) {
+	var err error
+	hostname, err := os.Hostname()
+	if err != nil {
+		return 0, err
+	}
+	arr := strings.Split(hostname, "-")
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("hostname cannot parse: %s to get index", hostname)
+	}
+	index, err := strconv.Atoi(arr[len(arr)-1])
+	if err != nil {
+		return 0, fmt.Errorf("collecor ID index parse failed with: %w", err)
+	}
+	return index, nil
 }

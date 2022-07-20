@@ -44,7 +44,9 @@ to quickly create a Cobra application.`,
 		}
 
 		logrus.SetOutput(cmd.OutOrStdout())
-		logrus.SetReportCaller(true)
+		if logrus.Level(logLevel) > logrus.DebugLevel {
+			logrus.SetReportCaller(true)
+		}
 		logrus.SetFormatter(&logrus.TextFormatter{TimestampFormat: time.RFC3339, FullTimestamp: true})
 		logrus.SetLevel(logrus.Level(logLevel))
 		logger := commandLogger(cmd)
@@ -72,7 +74,14 @@ to quickly create a Cobra application.`,
 }
 
 func commandLogger(cmd *cobra.Command) logrus.FieldLogger {
-	return logrus.WithField("command", cmd.Name())
+	return logrus.WithField("command", getCmdFqnm(cmd))
+}
+
+func getCmdFqnm(cmd *cobra.Command) string {
+	if cmd.Parent() == nil {
+		return cmd.Name()
+	}
+	return fmt.Sprintf("%s.%s", getCmdFqnm(cmd.Parent()), cmd.Name())
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

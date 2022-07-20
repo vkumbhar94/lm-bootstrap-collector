@@ -1,0 +1,31 @@
+debugIndex: 0
+agentconf:
+  - key: strkey
+    value: "agent"
+  - key: strkeymap
+    value: {"ijk":"lmn"}
+    coalesceFormat: json
+  - key: strkeiyslice
+    value:
+      - abc
+      - xyz 
+  - key: boolkey
+    value: false
+  - key: csvkey
+    values: [ping, script, snmp, somethingjson]
+    coalesceFormat: csv
+    forceQuote: true
+    dontOverride: true
+  - key: discretekey
+    discrete: true
+    values:
+      - ijk
+      - lmn
+  - key: discretejsonkey
+    discrete: true
+    valuesList:
+      - - pqr
+        - xyz
+      - - lmn
+        - xyz
+    coalesceFormat: json
