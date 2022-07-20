@@ -5,13 +5,14 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"reflect"
+
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/collector"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/config"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/jsonmask"
-	"reflect"
 )
 
 // applyCmd represents the apply command

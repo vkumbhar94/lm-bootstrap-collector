@@ -3,12 +3,13 @@ package jsonmask
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 var defaultSensitiveData = []string{
@@ -203,6 +204,7 @@ func MaskJson(data any, keys ...string) (string, error) {
 	}
 	return *t, nil
 }
+
 func MaskYaml(data any, keys ...string) (string, error) {
 	maskJson, err := MaskJson(data, keys...)
 	if err != nil {

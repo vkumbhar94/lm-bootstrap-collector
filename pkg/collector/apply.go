@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/config"
 	"io/fs"
 	"os"
 	"reflect"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/config"
 )
 
 func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
@@ -27,7 +28,7 @@ func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
 		_ = file.Close()
 	}(file)
 
-	var confKeys = make(map[string]*struct {
+	confKeys := make(map[string]*struct {
 		visited bool
 		index   int
 	}, 0)
@@ -50,7 +51,7 @@ func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
 	}
 
 	var lines []string
-	//kvMap := map[string]string{}
+	// kvMap := map[string]string{}
 	scanner := bufio.NewScanner(file)
 	// optionally, resize scanner's capacity for lines over 64K, see next example
 	for scanner.Scan() {
@@ -89,7 +90,6 @@ func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
 	err = file.Truncate(0)
 	if err != nil {
 		return err
-
 	}
 	_, err = file.Seek(0, 0)
 	if err != nil {

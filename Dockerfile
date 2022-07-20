@@ -1,5 +1,6 @@
 FROM ubuntu:21.10
 ENV DEBIAN_FRONTEND noninteractive
+LABEL org.opencontainers.image.description "Logicmonitor Bootstrap Collector"
 
 # NTP is needed for some collector operations
 RUN apt update && apt-get update \
