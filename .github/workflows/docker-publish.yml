@@ -82,10 +82,10 @@ jobs:
             type=semver,pattern={{major}}
 
       - name: Wait for goreleaser to publish release
-        if: $GITHUB_REF_TYPE  == 'tag'
+        if: env.GITHUB_REF_TYPE  == 'tag'
         uses: lewagon/wait-on-check-action@v1.0.0
         with:
-          ref: $GITHUB_REF_NAME
+          ref: env.GITHUB_REF_NAME
           running-workflow-name: "gorelease.yaml"
           repo-token: ${{ secrets.GH_PAT}}
           wait-interval: 10
