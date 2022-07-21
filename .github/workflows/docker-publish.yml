@@ -81,6 +81,14 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
 
+      - name: Wait for goreleaser to publish release
+        if: $GITHUB_REF_TYPE  == 'tag'
+        uses: lewagon/wait-on-check-action@v1.0.0
+        with:
+          ref: $GITHUB_REF_NAME
+          running-workflow-name: "gorelease.yaml"
+          repo-token: ${{ secrets.GH_PAT}}
+          wait-interval: 10
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
