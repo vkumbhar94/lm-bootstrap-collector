@@ -22,6 +22,10 @@ var (
 	creds                    = &config.Creds{}
 )
 
+var ExemptCredsCmds = map[string]struct{}{
+	"lm-bootstrap-collector.version":      {},
+	"lm-bootstrap-collector.config.apply": {},
+}
 var logLevel = LogLevel(logrus.InfoLevel)
 
 // rootCmd represents the base command when called without any subcommands
@@ -40,7 +44,9 @@ to quickly create a Cobra application.`,
 		}
 		err := creds.Validate()
 		if err != nil {
-			return fmt.Errorf("credentials validation failed with: %w", err)
+			if _, ok := ExemptCredsCmds[getCmdFqnm(cmd)]; !ok {
+				return fmt.Errorf("credentials validation failed with: %w", err)
+			}
 		}
 
 		logrus.SetOutput(cmd.OutOrStdout())
