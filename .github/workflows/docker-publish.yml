@@ -39,6 +39,7 @@ jobs:
           echo $GITHUB_EVENT_NAME
           echo $GITHUB_REF_NAME
           echo $GITHUB_REF_TYPE
+          echo $GITHUB_ENV
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -82,10 +83,10 @@ jobs:
             type=semver,pattern={{major}}
 
       - name: Wait for goreleaser to publish release
-        if: env.GITHUB_REF_TYPE  == 'tag'
+        if: github.ref_type == 'tag'
         uses: lewagon/wait-on-check-action@v1.0.0
         with:
-          ref: env.GITHUB_REF_NAME
+          ref: github.ref_name
           running-workflow-name: "gorelease.yaml"
           repo-token: ${{ secrets.GH_PAT}}
           wait-interval: 10
