@@ -114,7 +114,7 @@ signal_handler() {
 set -e
 # run application
 # python /collector/startup.py
-/usr/bin/lmbc start
+lmbc start
 # while true; do sleep 3; done
 
 # ensure the collector is stopped so that we can control startup
