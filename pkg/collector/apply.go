@@ -3,30 +3,92 @@ package collector
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/fs"
+	"github.com/vkumbhar94/lm-bootstrap-collector/pkg"
+	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/util"
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/config"
 )
 
 func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
-	logger.Info("Applying...")
-	fi, err := os.Stat("agent.conf")
+	//return ApplyConf(logger, "agent.conf-test", pkg.Properties, cf)
+	return ApplyConf(logger, pkg.AgentConf, pkg.Properties, cf)
+}
+
+func ApplyConf(logger logrus.FieldLogger, confFile string, configFormat pkg.ConfigFormat, cf *config.CollectorConf) error {
+	err := Backup(confFile, false)
 	if err != nil {
-		return err
+		logger.Warnf("Failed to take backup with error: %s", err)
 	}
-	size, modTime := fi.Size(), fi.ModTime()
-	file, err := os.OpenFile("agent.conf", os.O_RDWR, fs.ModePerm)
+
+	freshConfig := false
+	if exists, err := util.FileExists(confFile); err == nil && !exists {
+		freshConfig = true
+	}
+
+	size, modTime := int64(0), time.Now()
+	if !freshConfig {
+		fi, err := os.Stat(confFile)
+		if err == nil {
+			size, modTime = fi.Size(), fi.ModTime()
+		}
+	}
+
+	var collectorIndex int
+	if cf.DebugIndex != nil {
+		collectorIndex = *cf.DebugIndex
+	} else {
+		collectorIndex, err = config.GetCollectorIndex()
+		if err != nil {
+			return fmt.Errorf("cannot retrieve collector index: %w", err)
+		}
+	}
+
+	file, err := os.ReadFile(confFile)
 	if err != nil {
-		return err
+		file = []byte{}
 	}
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
+	var updatedConf []byte
+	switch configFormat {
+	case pkg.Properties:
+		updatedConf, err = ApplyPropertiesFile(logger, file, cf, collectorIndex)
+		if err != nil {
+			return fmt.Errorf("error while updating configuration: %w", err)
+		}
+	}
+
+	if !freshConfig {
+		fi2, err := os.Stat(confFile)
+		if err != nil {
+			return fmt.Errorf("failed to get file info while writing: %w", err)
+		}
+		if fi2.Size() != size || modTime != fi2.ModTime() {
+			return fmt.Errorf("file changed after read")
+		}
+	}
+	err = os.WriteFile(confFile, updatedConf, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("error while writing updated configuration: %w", err)
+	}
+
+	return nil
+}
+
+func ApplyPropertiesFile(logger logrus.FieldLogger, confFile []byte, cf *config.CollectorConf, collectorIndex int) ([]byte, error) {
+	scanner := bufio.NewScanner(strings.NewReader(string(confFile)))
+	//file, err := os.OpenFile(confFile, os.O_RDWR, fs.ModePerm)
+	//if err != nil {
+	//	return err
+	//}
+	//defer func(file *os.File) {
+	//	_ = file.Close()
+	//}(file)
 
 	confKeys := make(map[string]*struct {
 		visited bool
@@ -40,19 +102,9 @@ func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
 		}{visited: false, index: idx}
 	}
 
-	var collectorIndex int
-	if cf.DebugIndex != nil {
-		collectorIndex = *cf.DebugIndex
-	} else {
-		collectorIndex, err = config.GetCollectorIndex()
-		if err != nil {
-			return err
-		}
-	}
-
 	var lines []string
 	// kvMap := map[string]string{}
-	scanner := bufio.NewScanner(file)
+	//scanner := bufio.NewScanner(file)
 	// optionally, resize scanner's capacity for lines over 64K, see next example
 	for scanner.Scan() {
 		kv := strings.SplitN(scanner.Text(), "=", 2)
@@ -68,6 +120,9 @@ func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
 			lines = append(lines, scanner.Text())
 		}
 	}
+	if err := scanner.Err(); err != nil {
+		return []byte{}, err
+	}
 	for k, v := range confKeys {
 		if !v.visited {
 			val := build(logger, "", cf.AgentConf[v.index], collectorIndex)
@@ -75,29 +130,39 @@ func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return err
-	}
+	return []byte(strings.Join(lines, "\n") + "\n"), nil
+}
 
-	fi2, err := os.Stat("agent.conf")
-	if err != nil {
-		return err
-	}
-	if fi2.Size() != size || modTime != fi2.ModTime() {
-		return fmt.Errorf("file changed after read")
-	}
+var ErrorNoBackup = errors.New("no file to take backup")
 
-	err = file.Truncate(0)
-	if err != nil {
-		return err
+func Backup(file string, override bool) error {
+	backupFile := file + ".bkp"
+	if exists, err := util.FileExists(backupFile); err == nil && !exists {
+		override = true
 	}
-	_, err = file.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-	_, err = file.Write([]byte(strings.Join(lines, "\n") + "\n"))
-	if err != nil {
-		return err
+	//if exists, err := util.FileExists(file +".bkp"); err == nil && !exists {
+	if override {
+		if exists, err := util.FileExists(file); err == nil && !exists {
+			return fmt.Errorf("file does not exist to take backup: %w", ErrorNoBackup)
+		}
+		r, err := os.Open(file)
+		if err != nil {
+			return err
+		}
+		defer func(r *os.File) {
+			_ = r.Close()
+		}(r)
+		w, err := os.Create(backupFile)
+		if err != nil {
+			return err
+		}
+		defer func(w *os.File) {
+			_ = w.Close()
+		}(w)
+		_, err = w.ReadFrom(r)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

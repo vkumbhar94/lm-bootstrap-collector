@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -29,7 +28,12 @@ func Start(logger logrus.FieldLogger, creds *config.Creds, conf *config.Config, 
 			return fmt.Errorf("running in kubernetes but collector not found: %w", err)
 		}
 		// TODO: create collector from config
-		collector, err = NewCollector(logger, conf, client)
+		logger.Infof("Finding collector group: %s", conf.Group)
+		collectorGroupID, err := FindCollectorGroupID(conf.Group, client)
+		if err != nil {
+			return fmt.Errorf("collector group [%s] doesn't exist: %w", conf.Group, err)
+		}
+		collector, err = NewCollector(conf, client, collectorGroupID)
 		if err != nil {
 			return err
 		}
@@ -186,39 +190,13 @@ func DownloadInstaller(logger logrus.FieldLogger, conf *config.Config, sdkGo *cl
 	// detect cases where we download an invalid installer
 	stat, err := os.Stat(filename)
 	if err == nil {
-		logger.Infof("Installer size: %s", ToSI(stat.Size()))
+		logger.Infof("Installer size: %s", util.ToSI(stat.Size()))
 	}
 
 	return filename, nil
 }
 
-func ToSI(size int64) string {
-	suffixes := []string{"B", "KB", "MB", "GB", "TB"}
-	base := math.Log(float64(size)) / math.Log(1024)
-	getSize := Round(math.Pow(1024, base-math.Floor(base)), .5, 2)
-	getSuffix := suffixes[int(math.Floor(base))]
-	return strconv.FormatFloat(getSize, 'f', -1, 64) + " " + getSuffix
-}
-
-func Round(val float64, roundOn float64, places int) (newVal float64) {
-	var round float64
-	pow := math.Pow(10, float64(places))
-	digit := pow * val
-	_, div := math.Modf(digit)
-	if div >= roundOn {
-		round = math.Ceil(digit)
-	} else {
-		round = math.Floor(digit)
-	}
-	newVal = round / pow
-	return
-}
-
-func NewCollector(logger logrus.FieldLogger, conf *config.Config, sdkGo *client.LMSdkGo) (*models.Collector, error) {
-	collectorGroupID, err := FindCollectorGroupID(logger, conf.Group, sdkGo)
-	if err != nil {
-		return nil, fmt.Errorf("collector group [%s] doesn't exist: %w", conf.Group, err)
-	}
+func NewCollector(conf *config.Config, sdkGo *client.LMSdkGo, collectorGroupID int32) (*models.Collector, error) {
 	collector := &models.Collector{
 		CollectorGroupID:              collectorGroupID,
 		BackupAgentID:                 conf.BackupCollectorID,
@@ -253,8 +231,7 @@ func NewCollector(logger logrus.FieldLogger, conf *config.Config, sdkGo *client.
 	return collector, nil
 }
 
-func FindCollectorGroupID(logger logrus.FieldLogger, collectorGroup string, sdkGo *client.LMSdkGo) (int32, error) {
-	logger.Infof("Finding collector group " + collectorGroup)
+func FindCollectorGroupID(collectorGroup string, sdkGo *client.LMSdkGo) (int32, error) {
 	// if the root group is set, no need to search
 	if collectorGroup == "/" {
 		return 1, nil
