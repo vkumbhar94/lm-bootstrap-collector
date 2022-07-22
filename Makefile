@@ -2,6 +2,8 @@ NAMESPACE  := logicmonitor
 REPOSITORY := collector
 VERSION       ?= $(shell git describe --tags --always --dirty)
 
+default: build
+
 gofmt:
 ifeq ($(shell uname -s), Darwin)
 	find pkg/ -type f | grep go | egrep -v "mocks|gomock" | xargs gofmt -l -d -s -w; sync
@@ -20,3 +22,9 @@ endif
 
 build:
 	docker build -t $(NAMESPACE)/$(REPOSITORY):$(VERSION) .
+
+gononroot-build:
+	docker build -t $(NAMESPACE)/$(REPOSITORY):$(VERSION) -f Dockerfile.gononroot .
+
+nonroot-build:
+	docker build -t $(NAMESPACE)/$(REPOSITORY):$(VERSION) -f Dockerfile.nonroot .

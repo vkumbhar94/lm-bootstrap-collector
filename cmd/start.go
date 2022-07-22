@@ -71,14 +71,14 @@ func init() {
 	// when this action is called directly.
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	startCmd.Flags().Int32Var(&conf.BackupCollectorID, "backup-collector-id", 0, "Backup Collector ID")
-	startCmd.Flags().VarP(&conf.Size, "collector-size", "", "Collector Size")
+	startCmd.Flags().VarP(&conf.Size, "size", "", "Collector Size")
 	startCmd.Flags().BoolVar(&conf.Cleanup, "cleanup", false, "Cleanup")
-	startCmd.Flags().StringVar(&conf.Group, "collector-group", "", "Group")
+	startCmd.Flags().StringVar(&conf.Group, "group", "", "Group")
 	startCmd.Flags().Int32Var(&conf.Version, "version", 0, "Version")
 	startCmd.Flags().StringVar(&conf.Description, "description", "", "Description")
 	startCmd.Flags().BoolVar(&conf.EnableFailBack, "enable-fail-back", false, "EnableFailBack")
 	startCmd.Flags().Int32Var(&conf.EscalatingChainID, "escalating-chain-id", 0, "EscalatingChainID")
-	startCmd.Flags().Int32Var(&conf.ID, "collector-id", 0, "ID")
+	startCmd.Flags().Int32Var(&conf.ID, "id", 0, "ID")
 	startCmd.Flags().Int32Var(&conf.ResendInterval, "resend-interval", 0, "ResendInterval")
 	startCmd.Flags().BoolVar(&conf.SuppressAlertClear, "suppress-alert-clear", false, "SuppressAlertClear")
 	startCmd.Flags().BoolVar(&conf.UseEa, "use-ea", false, "UseEa")
@@ -87,8 +87,11 @@ func init() {
 	startCmd.Flags().StringVar(&conf.IDS, "ids", "", "IDS")
 	startCmd.Flags().BoolVar(&conf.Debug, "debug", false, "Debug")
 	startCmd.Flags().IntVar(&conf.DebugIndex, "debug-index", 0, "Debug Index")
+	startCmd.Flags().BoolVar(&conf.SkipInstall, "skip-install", false, "Skip Install (only download)")
+	startCmd.Flags().BoolVar(&conf.RunAsSudo, "run-as-sudo", false, "Run As Sudo")
+	startCmd.Flags().StringVar(&conf.InstallUser, "install-user", "logicmonitor", "Install User")
 
-	_ = startCmd.RegisterFlagCompletionFunc("collector-size", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	_ = startCmd.RegisterFlagCompletionFunc("size", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"nano", "small", "medium", "large", "extra_large", "double_extra_large"}, cobra.ShellCompDirectiveDefault
 	})
 	// Here you will define your flags and configuration settings.

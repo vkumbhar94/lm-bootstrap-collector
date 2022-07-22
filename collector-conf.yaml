@@ -3,8 +3,9 @@ agentconf:
   - key: strkey
     value: "agent"
   - key: strkeymap
-    value: {"ijk":"lmn"}
+    value: {"ijk3":"lmn"}
     coalesceFormat: json
+    dontOverride: true
   - key: strkeiyslice
     value:
       - abc
@@ -12,9 +13,13 @@ agentconf:
   - key: boolkey
     value: false
   - key: csvkey
-    values: [ping, script, snmp, somethingjson]
+    values: [ping, script, snmp, newval]
     coalesceFormat: csv
     forceQuote: true
+    dontOverride: true
+  - key: orkey
+    values: [ijk, lmn, xyz, bsdk]
+    coalesceFormat: "|"
     dontOverride: true
   - key: discretekey
     discrete: true

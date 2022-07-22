@@ -75,6 +75,7 @@ type Creds struct {
 	ProxyUser string
 	ProxyPass string
 	IgnoreSSL bool
+	SudoPass  string
 
 	// created internally from proxy parameters
 	Proxy *url.URL
@@ -126,9 +127,12 @@ type Config struct {
 	UseEa              bool
 	Kubernetes         bool
 
-	IDS        string
-	Debug      bool
-	DebugIndex int
+	IDS         string
+	Debug       bool
+	DebugIndex  int
+	SkipInstall bool
+	InstallUser string
+	RunAsSudo   bool
 }
 
 func (c *Config) Validate() error {

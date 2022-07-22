@@ -108,6 +108,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&creds.ProxyUser, "proxy-user", "", "ProxyUser")
 	rootCmd.PersistentFlags().StringVar(&creds.ProxyPass, "proxy-pass", "", "ProxyPass")
 	rootCmd.PersistentFlags().BoolVar(&creds.IgnoreSSL, "ignore-ssl", false, "IgnoreSSL")
+	rootCmd.PersistentFlags().StringVar(&creds.SudoPass, "sudo-pass", "", "Sudo Password")
 
 	_ = rootCmd.RegisterFlagCompletionFunc("log-level", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"info", "debug", "trace", "warn", "warning", "error", "fatal", "panic"}, cobra.ShellCompDirectiveDefault

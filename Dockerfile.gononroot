@@ -1,0 +1,35 @@
+FROM golang:1.18 as build
+WORKDIR $GOPATH/src/github.com/vkumbhar94/lm-bootstrap-collector
+ARG VERSION
+COPY ./ ./
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /lmbc
+
+FROM ubuntu:21.10
+ENV DEBIAN_FRONTEND noninteractive
+
+# NTP is needed for some collector operations
+RUN apt update && apt-get update \
+  && apt install software-properties-common -y \
+  && add-apt-repository ppa:deadsnakes/ppa \
+  && apt-get install --no-install-recommends -y \
+  tcl \
+  inetutils-traceroute \
+  file \
+  iputils-ping \
+  ntp \
+  perl \
+  procps \
+  xxd sudo \
+  && apt-get -y clean \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /lmbc /bin
+RUN mkdir /usr/local/logicmonitor
+
+COPY ./adminentrypoint.sh /adminentrypoint.sh
+RUN useradd logicmonitor && echo "logicmonitor:logicmonitor" | chpasswd && adduser logicmonitor sudo
+USER logicmonitor
+#RUN useradd admin && echo "admin:admin" | chpasswd && adduser admin sudo
+#USER admin
+
+ENTRYPOINT ["/adminentrypoint.sh"]

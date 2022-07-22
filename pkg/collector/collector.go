@@ -70,8 +70,18 @@ func Install(logger logrus.FieldLogger, creds *config.Creds, conf *config.Config
 			return err
 		}
 	}
+	if conf.SkipInstall {
+		logger.Infof("Downloaded installer collector at [%s], skipping installation", filename)
+
+		return nil
+	}
 	logger.Infof("Installing collector: %s", filename)
-	installArgs := []string{"-y"}
+	var installArgs []string
+	// Running whole script as non-root
+	//if conf.RunAsSudo {
+	//	installArgs = append(installArgs, "echo", creds.SudoPass, "|", "sudo", "-S")
+	//}
+	installArgs = append(installArgs, filename, "-y")
 	//  force update the collector object to ensure all details are up-to-date
 	//  e.g. build version
 	if collector.Build != "0" {
@@ -83,9 +93,10 @@ func Install(logger logrus.FieldLogger, creds *config.Creds, conf *config.Config
 			currentVersion = c.Payload.Build
 		}
 	}
-	if conf.Version >= constants.MinNonRootInstallVer || conf.UseEa || conf.Version == 0 {
-		installArgs = append(installArgs, "-u", "root")
-	}
+	//if conf.Version >= constants.MinNonRootInstallVer || conf.UseEa || conf.Version == 0 {
+	//	installArgs = append(installArgs, "-u", "root")
+	//}
+	installArgs = append(installArgs, "-u", conf.InstallUser)
 	if creds.ProxyUrl != "" {
 		installArgs = append(installArgs, "-p", creds.Proxy.Host)
 		if creds.ProxyUser != "" {
@@ -95,7 +106,8 @@ func Install(logger logrus.FieldLogger, creds *config.Creds, conf *config.Config
 			}
 		}
 	}
-	err, stdout, stderr := util.Shellout(filename, installArgs...)
+	logger.Debugf("Running command: %v", installArgs)
+	err, stdout, stderr := util.Shellout(installArgs[0], installArgs[1:]...)
 	if err != nil || stderr != "" {
 		msg := stderr
 		if msg == "" {
