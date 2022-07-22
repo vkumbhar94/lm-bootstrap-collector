@@ -5,19 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/vkumbhar94/lm-bootstrap-collector/pkg"
-	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/util"
 	"os"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/vkumbhar94/lm-bootstrap-collector/pkg"
 	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/config"
+	"github.com/vkumbhar94/lm-bootstrap-collector/pkg/util"
 )
 
 func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
-	//return ApplyConf(logger, "agent.conf-test", pkg.Properties, cf)
+	// return ApplyConf(logger, "agent.conf-test", pkg.Properties, cf)
 	return ApplyConf(logger, pkg.AgentConf, pkg.Properties, cf)
 }
 
@@ -104,7 +104,7 @@ func ApplyPropertiesFile(logger logrus.FieldLogger, confFile []byte, cf *config.
 
 	var lines []string
 	// kvMap := map[string]string{}
-	//scanner := bufio.NewScanner(file)
+	// scanner := bufio.NewScanner(file)
 	// optionally, resize scanner's capacity for lines over 64K, see next example
 	for scanner.Scan() {
 		kv := strings.SplitN(scanner.Text(), "=", 2)
@@ -140,7 +140,7 @@ func Backup(file string, override bool) error {
 	if exists, err := util.FileExists(backupFile); err == nil && !exists {
 		override = true
 	}
-	//if exists, err := util.FileExists(file +".bkp"); err == nil && !exists {
+	// if exists, err := util.FileExists(file +".bkp"); err == nil && !exists {
 	if override {
 		if exists, err := util.FileExists(file); err == nil && !exists {
 			return fmt.Errorf("file does not exist to take backup: %w", ErrorNoBackup)
@@ -257,7 +257,7 @@ func coalesce(logger logrus.FieldLogger, s string, values any, format config.Coa
 						}
 					case reflect.Array, reflect.Slice:
 						valuesArr := values.([]any)
-						var valuesMap = make(map[any]struct{}, 0)
+						valuesMap := make(map[any]struct{}, 0)
 						for _, v := range valuesArr {
 							valuesMap[v] = struct{}{}
 						}

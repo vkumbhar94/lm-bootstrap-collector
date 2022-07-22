@@ -27,7 +27,7 @@ COPY --from=build /lmbc /bin
 RUN mkdir /usr/local/logicmonitor
 
 COPY ./adminentrypoint.sh /adminentrypoint.sh
-RUN useradd logicmonitor && echo "logicmonitor:logicmonitor" | chpasswd && adduser logicmonitor sudo
+RUN useradd logicmonitor && echo "logicmonitor:lmsudoc" | chpasswd && adduser logicmonitor sudo
 USER logicmonitor
 #RUN useradd admin && echo "admin:admin" | chpasswd && adduser admin sudo
 #USER admin

@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 )
@@ -13,7 +14,8 @@ func Shellout(command string, args ...string) (error, string, string) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	return err, stdout.String(), stderr.String()
+
+	return fmt.Errorf("%w: stdout: %s\n stderr: %s", err, stdout.String(), stderr.String()), stdout.String(), stderr.String()
 }
 
 func Touch(file string) error {

@@ -57,7 +57,7 @@ to quickly create a Cobra application.`,
 		logrus.SetLevel(logrus.Level(logLevel))
 		logger := commandLogger(cmd)
 
-		maskedJsonStr, err := jsonmask.MaskJson(creds, "AccessID", "AccessKey", "ProxyPass")
+		maskedJsonStr, err := jsonmask.MaskJson(creds, "AccessID", "AccessKey", "ProxyPass", "SudoPass")
 
 		if err != nil {
 			logger.Warn("Couldn't mask sensitive data of configuration, cannot printing credentials on stdout")

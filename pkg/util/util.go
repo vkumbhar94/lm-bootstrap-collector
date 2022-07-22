@@ -32,7 +32,6 @@ func Round(val float64, roundOn float64, places int) (newVal float64) {
 func FileExists(path string) (bool, error) {
 	if _, err := os.Stat(path); err == nil {
 		return true, nil
-
 	} else if errors.Is(err, os.ErrNotExist) {
 		//} else if os.IsNotExist(err) {
 		return false, nil
