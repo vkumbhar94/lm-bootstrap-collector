@@ -17,8 +17,8 @@ import (
 )
 
 func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
-	//return ApplyConf(logger, "agent.conf-test", pkg.Properties, cf)
-	return ApplyConf(logger, pkg.AgentConf, pkg.Properties, cf)
+	return ApplyConf(logger, "agent.conf-test", pkg.Properties, cf)
+	//return ApplyConf(logger, pkg.AgentConf, pkg.Properties, cf)
 }
 
 func ApplyConf(logger logrus.FieldLogger, confFile string, configFormat pkg.ConfigFormat, cf *config.CollectorConf) error {
@@ -207,13 +207,6 @@ func coalesce(logger logrus.FieldLogger, s string, values any, format config.Coa
 		if reflect.TypeOf(values).Kind() == reflect.Map {
 			return ""
 		}
-		prevArr := strings.Split(s, format.Separator())
-		prevArrMap := make(map[string]bool)
-		for _, v := range prevArr {
-			if s != "" {
-				prevArrMap[v] = false
-			}
-		}
 		var arr []string
 		if val, ok := values.([]any); ok {
 			for _, v := range val {
@@ -221,6 +214,13 @@ func coalesce(logger logrus.FieldLogger, s string, values any, format config.Coa
 			}
 		}
 		if dontOverride {
+			prevArr := strings.Split(s, format.Separator())
+			prevArrMap := make(map[string]bool)
+			for _, v := range prevArr {
+				if s != "" {
+					prevArrMap[v] = false
+				}
+			}
 			for _, v := range arr {
 				if _, ok := prevArrMap[v]; ok {
 					prevArrMap[v] = true
@@ -235,6 +235,44 @@ func coalesce(logger logrus.FieldLogger, s string, values any, format config.Coa
 
 		return strings.Join(arr, format.Separator())
 	case config.Json:
+		if dontOverride {
+			var previous any
+			err := json.Unmarshal([]byte(s), &previous)
+			if err != nil {
+				logger.Warnf("cannot retain old config value: %s", s)
+			} else {
+				pt := reflect.TypeOf(previous)
+				if vt := reflect.TypeOf(values); vt == pt {
+					switch pt.Kind() {
+					case reflect.Map:
+						if valuesMap, ok := values.(map[string]any); ok {
+							if m, ok2 := previous.(map[string]any); ok2 {
+								for k, v := range m {
+									if _, ok := valuesMap[k]; !ok {
+										valuesMap[k] = v
+									}
+								}
+								values = valuesMap
+							}
+						}
+					case reflect.Array, reflect.Slice:
+						valuesArr := values.([]any)
+						var valuesMap = make(map[any]struct{}, 0)
+						for _, v := range valuesArr {
+							valuesMap[v] = struct{}{}
+						}
+						for _, v := range previous.([]any) {
+							if _, ok := valuesMap[v]; !ok {
+								valuesArr = append(valuesArr, v)
+							}
+						}
+						values = valuesArr
+					}
+				} else {
+					logger.Warnf("type mismatch hence cannot retain old config value: %s", s)
+				}
+			}
+		}
 		marshal, err := json.Marshal(values)
 		if err != nil {
 			return ""
