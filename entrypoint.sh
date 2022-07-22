@@ -116,7 +116,7 @@ set -e
 # python /collector/startup.py
 lmbc start
 # while true; do sleep 3; done
-
+APPLYRET=$(lmbc config apply)
 # ensure the collector is stopped so that we can control startup
 $AGENT_BIN stop > /dev/null
 $WATCHDOG_BIN stop > /dev/null
