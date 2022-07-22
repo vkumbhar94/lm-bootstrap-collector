@@ -17,8 +17,8 @@ import (
 )
 
 func Apply(logger logrus.FieldLogger, cf *config.CollectorConf) error {
-	return ApplyConf(logger, "agent.conf-test", pkg.Properties, cf)
-	//return ApplyConf(logger, pkg.AgentConf, pkg.Properties, cf)
+	//return ApplyConf(logger, "agent.conf-test", pkg.Properties, cf)
+	return ApplyConf(logger, pkg.AgentConf, pkg.Properties, cf)
 }
 
 func ApplyConf(logger logrus.FieldLogger, confFile string, configFormat pkg.ConfigFormat, cf *config.CollectorConf) error {
