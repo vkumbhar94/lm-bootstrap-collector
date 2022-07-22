@@ -203,11 +203,11 @@ func build(logger logrus.FieldLogger, s string, v *config.KeyValue, index int) s
 
 func coalesce(logger logrus.FieldLogger, s string, values any, format config.CoalesceFormat, dontOverride bool) string {
 	switch format {
-	case config.Csv:
+	case config.Csv, config.BitwiseOR:
 		if reflect.TypeOf(values).Kind() == reflect.Map {
 			return ""
 		}
-		prevArr := strings.Split(s, ",")
+		prevArr := strings.Split(s, format.Separator())
 		prevArrMap := make(map[string]bool)
 		for _, v := range prevArr {
 			if s != "" {
@@ -233,7 +233,7 @@ func coalesce(logger logrus.FieldLogger, s string, values any, format config.Coa
 			}
 		}
 
-		return strings.Join(arr, ",")
+		return strings.Join(arr, format.Separator())
 	case config.Json:
 		marshal, err := json.Marshal(values)
 		if err != nil {

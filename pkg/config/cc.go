@@ -38,6 +38,16 @@ func (cf *CoalesceFormat) UnmarshalText(text []byte) error {
 	return nil
 }
 
+func (cf *CoalesceFormat) Separator() string {
+	switch *cf {
+	case Csv:
+		return ","
+	case BitwiseOR:
+		return "|"
+	}
+	return ""
+}
+
 func (cf *CoalesceFormat) MarshalText() ([]byte, error) {
 	switch *cf {
 	case Json:
