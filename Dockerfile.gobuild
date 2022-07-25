@@ -4,7 +4,7 @@ ARG VERSION
 COPY ./ ./
 RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /lmbc
 
-FROM ubuntu:21.10
+FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND noninteractive
 
 # NTP is needed for some collector operations
