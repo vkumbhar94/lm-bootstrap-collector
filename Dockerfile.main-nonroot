@@ -20,6 +20,7 @@ RUN apt update && apt-get update && apt upgrade -y \
   perl \
   procps \
   xxd \
+  sudo \
   && apt-get -y clean \
   && rm -rf /var/lib/apt/lists/*
 
