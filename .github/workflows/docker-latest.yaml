@@ -81,7 +81,7 @@ jobs:
           file: Dockerfile.latest
           context: .
           push: true
-          tags: latest
+          tags: ghcr.io/vkumbhar94/lm-bootstrap-collector:latest
           labels: ${{ steps.meta.outputs.labels }}
 
         # Sign the resulting Docker image digest except on PRs.

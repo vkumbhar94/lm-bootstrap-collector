@@ -81,7 +81,7 @@ jobs:
           file: Dockerfile.nonroot
           context: .
           push: true
-          tags: nonroot
+          tags: ghcr.io/vkumbhar94/lm-bootstrap-collector:nonroot
           labels: ${{ steps.meta.outputs.labels }}
 
         # Sign the resulting Docker image digest except on PRs.
