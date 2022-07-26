@@ -76,9 +76,9 @@ jobs:
         uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
         with:
           context: .
-          file: Dockerfile.main
+          file: Dockerfile.main-nonroot
           push: ${{ github.event_name != 'pull_request' }}
-          tags: main
+          tags: main-nonroot
           labels: ${{ steps.meta.outputs.labels }}
 
         # Sign the resulting Docker image digest except on PRs.

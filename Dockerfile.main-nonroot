@@ -19,15 +19,16 @@ RUN apt update && apt-get update \
   ntp \
   perl \
   procps \
-  xxd sudo \
+  xxd \
   && apt-get -y clean \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /lmbc /bin
 RUN mkdir /usr/local/logicmonitor
 
-COPY entrypoint-nonroot.sh /adminentrypoint.sh
+COPY ./entrypoint-nonroot.sh /entrypoint-nonroot.sh
+
 RUN useradd logicmonitor && echo "logicmonitor:lmsudoc" | chpasswd && adduser logicmonitor sudo
 USER logicmonitor
 
-ENTRYPOINT ["/adminentrypoint.sh"]
+ENTRYPOINT ["/entrypoint-nonroot.sh"]

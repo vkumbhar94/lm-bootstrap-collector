@@ -1,4 +1,4 @@
-name: Docker - main
+name: Docker - nonroot
 
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
@@ -6,10 +6,12 @@ name: Docker - main
 # documentation.
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+        description: Go release Tag
+        type: string
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -75,10 +77,11 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
         with:
+          build-args: VERSION=${{ github.event.inputs.tag }}
+          file: Dockerfile.nonroot
           context: .
-          file: Dockerfile.main
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: main
+          push: true
+          tags: nonroot
           labels: ${{ steps.meta.outputs.labels }}
 
         # Sign the resulting Docker image digest except on PRs.
