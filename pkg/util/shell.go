@@ -14,8 +14,10 @@ func Shellout(command string, args ...string) (error, string, string) {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-
-	return fmt.Errorf("%w: stdout: %s\n stderr: %s", err, stdout.String(), stderr.String()), stdout.String(), stderr.String()
+	if err != nil {
+		return fmt.Errorf("shell error: %w: stdout: %s\n stderr: %s", err, stdout.String(), stderr.String()), stdout.String(), stderr.String()
+	}
+	return nil, stdout.String(), stderr.String()
 }
 
 func Touch(file string) error {

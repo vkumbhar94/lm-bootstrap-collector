@@ -155,7 +155,7 @@ func (c *Config) Validate() error {
 	//            err = 'Cannot proceed with installation because only Early Access collector versions support ' + kwargs[
 	//                'collector_size'] + 'size. To proceed further with installation, set \"use_ea\" parameter to true or use appropriate collector size.\n'
 	if !c.UseEa && (c.Size == ExtraLarge || c.Size == DoubleExtraLarge) {
-		err := fmt.Errorf("cannot proceed with installation because only Early Access collector versions support " + c.Size.String() + "size. To proceed further with installation, set \"use_ea\" parameter to true or use appropriate collector size")
+		err := fmt.Errorf("cannot proceed with installation because only Early Access collector versions support " + c.Size.String() + " size. To proceed further with installation, set \"use_ea\" parameter to true or use appropriate collector size")
 		return err
 	}
 

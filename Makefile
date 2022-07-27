@@ -1,5 +1,5 @@
-NAMESPACE  := logicmonitor
-REPOSITORY := collector
+NAMESPACE  ?= logicmonitor
+REPOSITORY ?= collector
 VERSION       ?= $(shell git describe --tags --always --dirty)
 
 default: build
@@ -22,6 +22,8 @@ endif
 
 build:
 	docker build -t $(NAMESPACE)/$(REPOSITORY):$(VERSION) .
+local-build:
+	docker build -t $(NAMESPACE)/$(REPOSITORY):$(VERSION) -f Dockerfile.gobuild .
 
 gononroot-build:
 	docker build -t $(NAMESPACE)/$(REPOSITORY):$(VERSION) -f Dockerfile.gononroot .

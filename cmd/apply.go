@@ -72,6 +72,7 @@ func initialiseConf(cmd *cobra.Command) error {
 	v.SetConfigName(collectorConfFileName)
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
+	v.AddConfigPath("/etc/collector")
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

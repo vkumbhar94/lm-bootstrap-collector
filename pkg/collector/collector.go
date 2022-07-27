@@ -108,16 +108,9 @@ func Install(logger logrus.FieldLogger, creds *config.Creds, conf *config.Config
 	}
 	logger.Debugf("Running command: %v", installArgs)
 	err, stdout, stderr := util.Shellout(installArgs[0], installArgs[1:]...)
-	if err != nil || stderr != "" {
-		msg := stderr
-		if msg == "" {
-			msg = stdout
-			if strings.Contains(msg, "LogicMonitor Collector has been installed successfully") &&
-				strings.Contains(msg, "unknown option: u") {
-			} else {
-				return err
-			}
-		}
+	logger.Debugf("Install err: %s, stdout: %s, stderr: %s", err, stdout, stderr)
+	if err != nil && !strings.Contains(stdout, "LogicMonitor Collector has been installed successfully") {
+		return err
 	}
 	if creds.IgnoreSSL {
 		_, _, _ = util.Shellout("sed", "-i",

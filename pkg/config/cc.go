@@ -76,7 +76,6 @@ type KeyValue struct {
 	Discrete       bool            `json:"discrete"`
 	Value          any             `json:"value"`
 	Values         []any           `json:"values"`
-	ValuesList     [][]any         `json:"valuesList"`
 	CoalesceFormat *CoalesceFormat `json:"coalesceFormat"`
 	ForceQuote     bool            `json:"forceQuote"`
 	DontOverride   bool            `json:"dontOverride"`
@@ -84,7 +83,7 @@ type KeyValue struct {
 
 type CollectorConf struct {
 	DebugIndex *int        `json:"debugIndex"`
-	AgentConf  []*KeyValue `json:"agent.conf"`
+	AgentConf  []*KeyValue `json:"agentConf"`
 }
 
 func (cc *CollectorConf) Validate() error {

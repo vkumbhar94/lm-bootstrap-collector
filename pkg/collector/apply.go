@@ -180,8 +180,6 @@ func build(logger logrus.FieldLogger, s string, v *config.KeyValue, index int) s
 			} else {
 				val = fmt.Sprintf("%v", v.Values[index])
 			}
-		} else if len(v.ValuesList) > 0 && len(v.ValuesList) > index {
-			val = coalesce(logger, s, v.ValuesList[index], *v.CoalesceFormat, v.DontOverride)
 		}
 	} else {
 		if len(v.Values) > 0 {
