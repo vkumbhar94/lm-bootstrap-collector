@@ -1,0 +1,5 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND noninteractive
+ADD lmbc-linux-amd64 /usr/local/bin/lmbc
+#USER nonroot
+ENTRYPOINT ["lmbc"]
