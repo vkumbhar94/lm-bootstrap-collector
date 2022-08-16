@@ -24,7 +24,7 @@ dockers:
   - image_templates:
       - "vkumbhar94/lmbc:latest"
       - "vkumbhar94/lmbc:{{ .Tag }}"
-      - "vkumbhar94/lmbc:v{{ .Major }}"
+      - "vkumbhar94/lmbc:v{{ .Major }}.{{ .Minor }}"
       - "vkumbhar94/lmbc:v{{ .Major }}"
     id: latest
     goos: linux
@@ -41,3 +41,5 @@ dockers:
       - "--build-arg=VERSION={{.Version}}"
       - "--platform=linux/amd64"
     dockerfile: Dockerfile.goreleaser
+    # setting skip push to auto - auto does not push pre-release tags, only stable
+    skip_push: "auto"
