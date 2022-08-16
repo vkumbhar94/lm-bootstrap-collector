@@ -43,3 +43,5 @@ dockers:
     dockerfile: Dockerfile.goreleaser
     # setting skip push to auto - auto does not push pre-release tags, only stable
     skip_push: "auto"
+release:
+  disable: true
